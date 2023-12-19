@@ -1,33 +1,61 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
-function App() {
-  const [count, setCount] = useState(0);
+import React, { useEffect, useState } from "react";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+
+import Login from "./components/Login";
+import Header from "./components/Header";
+import { getAuth } from "firebase/auth";
+import { app } from "./config/firebase.config";
+import { useDispatch, useSelector } from "react-redux";
+import { getAllProducts, validateUserJWTToken } from "./api";
+import { setUserDetails } from "./context/actions/userActions";
+import Dashboard from "./components/Dashboard";
+import Main from "./components/Main";
+import Home from "./pages/Home";
+import { setAllProducts } from "./context/actions/productActions";
+
+const App = () => {
+  const firebaseAuth = getAuth(app);
+  const [isLoading, setIsLoading] = useState(false);
+  const dispatch = useDispatch();
+  const products = useSelector((state) => state.products);
+
+  useEffect(() => {
+    if (!products) {
+      getAllProducts().then((data) => {
+        dispatch(setAllProducts(data));
+      });
+    }
+  }, []);
+  useEffect(() => {
+    0;
+    setIsLoading(true);
+    firebaseAuth.onAuthStateChanged((cred) => {
+      if (cred) {
+        cred.getIdToken().then((token) => {
+          // console.log(token);
+          validateUserJWTToken(token).then((data) => {
+            dispatch(setUserDetails(data));
+          });
+          // navigate("/",{replace:true});
+        });
+      }
+      setInterval(() => {
+        setIsLoading(false);
+      }, 3000);
+    });
+  }, []);
 
   return (
     <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+      <Header />
+      <Routes>
+        <Route path="/*" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/dashboard/*" element={<Dashboard />} />
+      </Routes>
+      {alert?.type && <Alert type={alert?.type} message={alert?.message} />}
     </>
   );
-}
+};
 
 export default App;
